@@ -10,6 +10,12 @@ Provided key and secret will be stored in a secure storage specific to OS you ar
 
 The trades are downloaded to CSV file.
 
+Recommended API Key Configuration:
+
+![API Key Configuration Example](doc/recommended-key-configuration.png)
+
+Make sure to add your machine IP address to the list of trusted IP addresses.
+
 ## Usage
 
 By default application runs in interactive mode.  Interactive mode is the best for running application from Windows Explorer, because when application is done it prompts for user input prior to closing the window.
