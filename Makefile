@@ -1,9 +1,6 @@
 default:
 	cat Makefile
 
-test:
-	echo $(buildStamp)
-
 buildStamp = $(shell git describe --tag | head -n 1)
 
 release:
