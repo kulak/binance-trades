@@ -26,10 +26,10 @@ func main() {
 		fmt.Println(err.Error())
 		rv = 1
 	}
+	// any argument would indicate non-interactive mode
+	// -b is for batch or background mode (non-interactive)
 	interactive := len(argsWithoutProg) == 0
 	if interactive {
-		// any argument would indicate non-interactive mode
-		// -b is for batch or background mode (non-interactive)
 		fmt.Print("Press Enter to quit application:")
 		reader := bufio.NewReader(os.Stdin)
 		reader.ReadString('\n')
