@@ -14,48 +14,57 @@ import (
 	"github.com/zalando/go-keyring"
 )
 
+var buildStamp = "unreleased"
+
 // This application exports all binance USD trades into CSV file.
+// Assume interractive mode and require application to read user input prior to closing
 func main() {
+	err := process()
+	argsWithoutProg := os.Args[1:]
+	rv := 0
+	if err != nil {
+		fmt.Println(err.Error())
+		rv = 1
+	}
+	interactive := len(argsWithoutProg) == 0
+	if interactive {
+		// any argument would indicate non-interactive mode
+		// -b is for batch or background mode (non-interactive)
+		fmt.Print("Press Enter to quit application:")
+		reader := bufio.NewReader(os.Stdin)
+		reader.ReadString('\n')
+	}
+	os.Exit(rv)
+}
+
+func process() error {
 	var (
 		apiKey    string
 		secretKey string
 		err       error
 	)
 
+	fmt.Println("binance-trades version: ", buildStamp)
+
 	{
 		var u *user.User
 		u, err = user.Current()
 		if err != nil {
-			panic(err)
+			return err
 		}
 		fmt.Println("using username: ", u.Username)
 		apiKey, err = getSecret("binance.api.key", u.Username)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		secretKey, err = getSecret("binance.api.secret", u.Username)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 
 	client := binance.NewClient(apiKey, secretKey)
-	client.TimeOffset = 5000
 	client.BaseURL = "https://api.binance.us"
-
-	{
-		start := time.Now()
-		timeMillisec, err := client.NewServerTimeService().Do(context.Background())
-		end := time.Now()
-		if err != nil {
-			fmt.Println("Error: ", err)
-			return
-		}
-		serverTime := timeFromMillisec(timeMillisec)
-		fmt.Printf("Start time:  %v\n", start)
-		fmt.Printf("End time:    %v, duration: %v\n", end, end.Sub(start))
-		fmt.Printf("Server time: %v\n", serverTime)
-	}
 
 	recvWinddow := binance.WithRecvWindow(10000)
 	var account *binance.Account
@@ -63,18 +72,15 @@ func main() {
 		svc := client.NewGetAccountService()
 		account, err = svc.Do(context.Background(), recvWinddow)
 		if err != nil {
-			fmt.Println("Error: ", err)
-			return
+			return err
 		}
-		fmt.Println("account:")
-		fmt.Println(account)
 	}
 	{
 		svc := client.NewListTradesService()
 
 		file, err := os.Create("result.csv")
 		if err != nil {
-			panic(err)
+			return err
 		}
 		defer file.Close()
 		writer := csv.NewWriter(file)
@@ -102,7 +108,7 @@ func main() {
 			var free float64
 			free, err = strconv.ParseFloat(balance.Free, 64)
 			if err != nil {
-				panic(err)
+				return err
 			}
 			if free == 0.0 {
 				continue
@@ -111,8 +117,7 @@ func main() {
 			svc.Symbol(balance.Asset + "USD")
 			trades, err := svc.Do(context.Background(), recvWinddow)
 			if err != nil {
-				fmt.Println("Error: ", err)
-				return
+				return err
 			}
 			fmt.Println("  ", balance.Asset, " trades")
 			for _, trade := range trades {
@@ -135,6 +140,7 @@ func main() {
 			}
 		}
 	}
+	return nil
 }
 
 func timeFromMillisec(timeMillisec int64) time.Time {

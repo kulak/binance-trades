@@ -1,4 +1,4 @@
-module gitlab.com/portfolio
+module github.com/Kulak/binance-trades
 
 go 1.16
 
